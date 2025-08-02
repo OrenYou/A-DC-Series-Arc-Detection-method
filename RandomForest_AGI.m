@@ -190,7 +190,7 @@ while (epoch_num < epoch_max)
         break; % 跳出循环，算法结束
     end
 end
-%% 6. 计算每个特征的AGI值并保存，计算每个特征中AGI值最小的10个特征所对应的index，并保存下来
+%% 6. 计算每个特征的AGI值并保存，计算每个特征中AGI值最小的25个特征所对应的index，并保存下来
 %定义标签
 Y_label = zeros(dim, 1);
 for k = 1:arc_samples_num
@@ -203,9 +203,9 @@ end
 % 获取每个特征的AGI值
 feature_gini = Find_optimal_feature(sample_t, Y_label);
 
-% 初始化存储每个类别中AGI最小的15个特征索引的矩阵
-top20_index = cell(cluster_num, 1);  % 使用元胞数组存储不同长度的索引
-top20_gini = cell(cluster_num, 1);   % 存储对应的AGI值
+% 初始化存储每个类别中AGI最小的25个特征索引的矩阵
+top25_index = cell(cluster_num, 1);  % 使用元胞数组存储不同长度的索引
+top25_gini = cell(cluster_num, 1);   % 存储对应的AGI值
 
 % 遍历所有特征
 for k = 1:feature_vec_length
@@ -213,25 +213,25 @@ for k = 1:feature_vec_length
     class_idx = index_cluster(k);
     
     % 初始化或更新该类的特征索引和AGI值列表
-    if isempty(top20_index{class_idx})
-        top20_index{class_idx} = k;
-        top20_gini{class_idx} = feature_gini(k);
+    if isempty(top25_index{class_idx})
+        top25_index{class_idx} = k;
+        top25_gini{class_idx} = feature_gini(k);
     else
         % 将当前特征添加到该类列表中
-        top20_index{class_idx} = [top20_index{class_idx}, k];
-        top20_gini{class_idx} = [top20_gini{class_idx}, feature_gini(k)];
+        top25_index{class_idx} = [top25_index{class_idx}, k];
+        top25_gini{class_idx} = [top25_gini{class_idx}, feature_gini(k)];
     end
 end
 
-% 对每个类别的特征按AGI值排序并取前20个
+% 对每个类别的特征按AGI值排序并取前25个
 for j = 1:cluster_num
-    if ~isempty(top20_gini{j})
-        [sorted_gini, sort_idx] = sort(top20_gini{j}); % 升序排序
+    if ~isempty(top25_gini{j})
+        [sorted_gini, sort_idx] = sort(top25_gini{j}); % 升序排序
         % 取AGI值最小的前15个特征
-        if length(sorted_gini) > 20
-            top20_index{j} = top20_index{j}(sort_idx(1:20));
+        if length(sorted_gini) > 25
+            top25_index{j} = top25_index{j}(sort_idx(1:25));
         else
-            top20_index{j} = top20_index{j}(sort_idx);
+            top25_index{j} = top25_index{j}(sort_idx);
         end
     end
 end
@@ -240,7 +240,7 @@ end
 % 计算新特征的总维度
 new_feature_dim = 0;
 for j = 1:cluster_num
-    new_feature_dim = new_feature_dim + length(top20_index{j});
+    new_feature_dim = new_feature_dim + length(top25_index{j});
 end
 
 % 定义新的样本矩阵
@@ -250,9 +250,9 @@ X_data = zeros(dim, new_feature_dim);
 for i = 1:dim
     col_idx = 1;
     for j = 1:cluster_num
-        if ~isempty(top20_index{j})
+        if ~isempty(top25_index{j})
             % 取出当前类别选中的特征
-            selected_features = sample_t(i, top20_index{j});
+            selected_features = sample_t(i, top25_index{j});
             feature_count = length(selected_features);
             % 存入新样本矩阵
             X_data(i, col_idx:col_idx+feature_count-1) = selected_features;
@@ -645,4 +645,5 @@ while ~tree.is_leaf
     end
 end
 pred = tree.class;
+
 end
